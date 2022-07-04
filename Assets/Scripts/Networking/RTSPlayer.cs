@@ -1,64 +1,88 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using Mirror;
 using Units;
 using UnityEngine;
 
-public class RTSPlayer : NetworkBehaviour
+namespace Networking
 {
-   [SerializeField]
-   private List<Unit> myUnits = new List<Unit>();
-
-   public override void OnStartServer()
+   public class RTSPlayer : NetworkBehaviour
    {
-      Unit.ServerOnUnitSpawned += ServerHandleUnitSpawned;
-      Unit.ServerOnUnitDespawned += ServerHandleUnitDespawned;
-   }
+      [SerializeField]
+      private List<Unit> myUnits = new List<Unit>();
 
-   public override void OnStopServer()
-   {
-      Unit.ServerOnUnitSpawned -= ServerHandleUnitSpawned;
-      Unit.ServerOnUnitDespawned -= ServerHandleUnitDespawned;
-   }
+      public List<Unit> GetMyUnits()
+      {
+         return myUnits;
+      }
 
-   private void ServerHandleUnitSpawned(Unit unit)
-   {
-      if (unit.connectionToClient.connectionId != connectionToClient.connectionId) return;
+      #region Server
+
+      public override void OnStartServer()
+      {
+         Unit.ServerOnUnitSpawned += ServerHandleUnitSpawned;
+         Unit.ServerOnUnitDespawned += ServerHandleUnitDespawned;
+         
+         var wordScores = new Dictionary<int, string>();
+      }
+
+      public override void OnStopServer()
+      {
+         Unit.ServerOnUnitSpawned -= ServerHandleUnitSpawned;
+         Unit.ServerOnUnitDespawned -= ServerHandleUnitDespawned;
+      }
       
-      myUnits.Add(unit);
-   }
+      private void ServerHandleUnitSpawned(Unit unit)
+      {
+         if (unit.connectionToClient.connectionId != connectionToClient.connectionId) return;
+      
+         myUnits.Add(unit);
+      }
    
-   private void ServerHandleUnitDespawned(Unit unit)
-   {
-      if (unit.connectionToClient.connectionId != connectionToClient.connectionId) return;
+      private void ServerHandleUnitDespawned(Unit unit)
+      {
+         if (unit.connectionToClient.connectionId != connectionToClient.connectionId) return;
       
-      myUnits.Remove(unit);
-   }
-
-   public override void OnStartClient()
-   {
-      if (!hasAuthority) return;
+         myUnits.Remove(unit);
+      }
       
-      Unit.AuthorityOnUnitSpawned += ServerHandleUnitSpawned;
-      Unit.AuthorityOnUnitDespawned += ServerHandleUnitDespawned;
-   }
+      
 
-   public override void OnStopClient()
-   {
-      if (!hasAuthority) return;
+      #endregion
 
-      Unit.AuthorityOnUnitSpawned -= ServerHandleUnitSpawned;
-      Unit.AuthorityOnUnitDespawned -= ServerHandleUnitDespawned;
-   }
+      #region Client
 
-   private void AuthorityHandleUnitSpawned(Unit unit)
-   {
-      if (!hasAuthority) return;
-      myUnits.Add(unit);
-   }
+      public override void OnStartClient()
+      {
+         if (!hasAuthority) return;
+      
+         Unit.AuthorityOnUnitSpawned += AuthorityHandleUnitSpawned;
+         Unit.AuthorityOnUnitDespawned += AuthorityHandleUnitDespawned;
+      }
+
+      public override void OnStopClient()
+      {
+         if (!hasAuthority) return;
+
+         Unit.AuthorityOnUnitSpawned -= AuthorityHandleUnitSpawned;
+         Unit.AuthorityOnUnitDespawned -= AuthorityHandleUnitDespawned;
+      }
+
+      private void AuthorityHandleUnitSpawned(Unit unit)
+      {
+         if (!hasAuthority) return;
+         myUnits.Add(unit);
+      }
    
-   private void AuthorityHandleUnitDespawned(Unit unit)
-   {
-      if (!hasAuthority) return;
-      myUnits.Remove(unit);
+      private void AuthorityHandleUnitDespawned(Unit unit)
+      {
+         if (!hasAuthority) return;
+         myUnits.Remove(unit);
+      }
+      
+      
+
+      #endregion
    }
 }

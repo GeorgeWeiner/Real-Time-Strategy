@@ -1,7 +1,7 @@
 using System;
+using Combat;
 using Mirror;
 using Player;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -10,6 +10,8 @@ namespace Units
     public class Unit : NetworkBehaviour
     {
         [SerializeField] private UnitMovement unitMovement;
+        [SerializeField] private Targeter targeter;
+        [SerializeField] private Health health;
         [SerializeField] private UnityEvent onSelected;
         [SerializeField] private UnityEvent onDeselected;
 
@@ -24,16 +26,29 @@ namespace Units
             return unitMovement;
         }
 
+        public Targeter GetTargeter()
+        {
+            return targeter;
+        }
+
         #region Server
 
         public override void OnStartServer()
         {
             ServerOnUnitSpawned?.Invoke(this);
+            health.ServerOnDie += ServerHandleDie;
         }
 
         public override void OnStopServer()
         {
             ServerOnUnitDespawned?.Invoke(this);
+            health.ServerOnDie -= ServerHandleDie;
+        }
+
+        [Server]
+        private void ServerHandleDie()
+        {
+            NetworkServer.Destroy(gameObject);
         }
 
         #endregion
